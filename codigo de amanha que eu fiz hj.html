@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lista de Tarefas</title>
+  <style>
+    body {
+      font-family: Baskerville Old Face;
+      background: #f1e7c0;
+      display: flex;
+      justify-content: center;
+      padding: 20px;
+    }
+    .container {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      width: 400px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    h1 {
+      text-align: center;
+      color: #670b2a;
+    }
+    .input-area {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+    input[type="text"] {
+      flex: 1;
+      padding: 8px;
+      border: 1px solid #670b2a;
+      border-radius: 5px;
+    }
+    button {
+      padding: 8px 12px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    #addBtn {
+      background: #670b2a;
+      color: white;
+      font-weight: bold;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+    li {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #f1e7c0;
+      margin-bottom: 8px;
+      padding: 8px;
+      border-radius: 5px;
+    }
+    .done {
+      text-decoration: line-through;
+      color: gray;
+    }
+    .actions button {
+      margin-left: 5px;
+      font-size: 12px;
+      padding: 5px 8px;
+    }
+    .edit {
+      background: #fff;
+      border: 1px solid #670b2a;
+      color: #670b2a;
+    }
+    .delete {
+      background: #670b2a;
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Minhas Tarefas</h1>
+    <div class="input-area">
+      <input type="text" id="taskInput" placeholder="Digite uma tarefa...">
+      <button id="addBtn">Adicionar</button>
+    </div>
+    <ul id="taskList"></ul>
+  </div>
+
+  <script>
+    const taskInput = document.getElementById('taskInput');
+    const addBtn = document.getElementById('addBtn');
+    const taskList = document.getElementById('taskList');
+
+    // Recupera tarefas do localStorage
+    let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+
+    // Salva tarefas
+    function saveTasks() {
+      localStorage.setItem('tasks', JSON.stringify(tasks));
+    }
+
+    // Renderiza as tarefas
+    function renderTasks() {
+      taskList.innerHTML = '';
+      tasks.forEach(task => {
+        const li = document.createElement('li');
+        li.dataset.id = task.id;
+
+        li.innerHTML = `
+          <span class="${task.done ? 'done' : ''}">
+            <input type="checkbox" ${task.done ? 'checked' : ''}>
+            ${task.text}
+          </span>
+          <div class="actions">
+            <button class="edit">Editar</button>
+            <button class="delete">Excluir</button>
+          </div>
+        `;
+
+        // marcar concluída
+        li.querySelector('input').addEventListener('change', e => {
+          task.done = e.target.checked;
+          saveTasks();
+          renderTasks();
+        });
+
+        // excluir
+        li.querySelector('.delete').addEventListener('click', () => {
+          tasks = tasks.filter(t => t.id !== task.id);
+          saveTasks();
+          renderTasks();
+        });
+
+        // editar (funcional com campo de texto direto)
+        li.querySelector('.edit').addEventListener('click', () => {
+          const span = li.querySelector('span');
+          const inputEdit = document.createElement('input');
+          inputEdit.type = 'text';
+          inputEdit.value = task.text;
+          inputEdit.style.flex = '1';
+          span.replaceWith(inputEdit);
+          inputEdit.focus();
+
+          inputEdit.addEventListener('keypress', e => {
+            if (e.key === 'Enter') {
+              const novoTexto = inputEdit.value.trim();
+              if (novoTexto) {
+                task.text = novoTexto;
+                saveTasks();
+                renderTasks();
+              }
+            }
+          });
+
+          inputEdit.addEventListener('blur', () => {
+            const novoTexto = inputEdit.value.trim();
+            if (novoTexto) {
+              task.text = novoTexto;
+              saveTasks();
+              renderTasks();
+            } else {
+              renderTasks();
+            }
+          });
+        });
+
+        taskList.appendChild(li);
+      });
+    }
+
+    // Adiciona tarefa
+    function addTask() {
+      const text = taskInput.value.trim();
+      if (!text) return;
+      const newTask = { id: Date.now(), text, done: false };
+      tasks.push(newTask);
+      taskInput.value = '';
+      saveTasks();
+      renderTasks();
+    }
+
+    addBtn.addEventListener('click', addTask);
+    taskInput.addEventListener('keypress', e => {
+      if (e.key === 'Enter') addTask();
+    });
+
+    renderTasks();
+  </script>
+</body>
+</html>
